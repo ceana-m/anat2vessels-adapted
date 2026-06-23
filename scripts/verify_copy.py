@@ -1,15 +1,6 @@
 import os
 from utils import is_valid_nifti
-
-# ============================================
-# DIRECTORIES
-# ============================================
-
-T1_SOURCE = r"Q:\Notes+Files\job\S26 WorkLearn\Data\CALSNIC 2\Nifti"
-T2_SOURCE = r"Q:\Notes+Files\job\S26 WorkLearn\Data\T2w10\Nifti"
-
-T1_DEST = r"Q:\anat2vessels\data\t1w"
-T2_DEST = r"Q:\anat2vessels\data\t2w"
+from config.paths import T1_SOURCE, T2_SOURCE, T1_DIR, T2_DIR
 
 # ============================================
 # GET ALL NIFTI FILENAMES
@@ -91,12 +82,12 @@ if __name__ == "__main__":
 
     verify(
         T1_SOURCE,
-        T1_DEST,
+        T1_DIR,
         "T1"
     )
 
     verify(
         T2_SOURCE,
-        T2_DEST,
+        T2_DIR,
         "T2"
     )

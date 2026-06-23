@@ -8,43 +8,47 @@ from utils import is_valid_nifti
 import time
 import shutil
 
-# =========================
-# PATH CONFIGURATION
-# =========================
+# # =========================
+# # PATH CONFIGURATION
+# # =========================
 
-BASE_DIR = r"Q:\anat2vessels"
+# BASE_DIR = r"Q:\anat2vessels"
 
-T1_DIR = rf"{BASE_DIR}\data\t1w"
-T2_DIR = rf"{BASE_DIR}\data\t2w"
+# T1_DIR = rf"{BASE_DIR}\data\t1w"
+# T2_DIR = rf"{BASE_DIR}\data\t2w"
 
-TEMP_T1_DIR = rf"{BASE_DIR}\temp\t1w"
-TEMP_T2_DIR = rf"{BASE_DIR}\temp\t2w"
+# TEMP_T1_DIR = rf"{BASE_DIR}\temp\t1w"
+# TEMP_T2_DIR = rf"{BASE_DIR}\temp\t2w"
 
-PREPROCESSED_DIR = rf"{BASE_DIR}\preprocessed"
-PREDICTIONS_DIR = rf"{BASE_DIR}\predictions"
-FEATURES_DIR = rf"{BASE_DIR}\features"
+# PREPROCESSED_DIR = rf"{BASE_DIR}\preprocessed"
+# PREDICTIONS_DIR = rf"{BASE_DIR}\predictions"
+# FEATURES_DIR = rf"{BASE_DIR}\features"
 
-MODEL_DIR = rf"{BASE_DIR}\model"
+# MODEL_DIR = rf"{BASE_DIR}\model"
 
-REPO_DIR = rf"{BASE_DIR}\repo\anat2vessels\inference"
+# REPO_DIR = rf"{BASE_DIR}\repo\anat2vessels\inference"
 
-PREPROCESS_ENV = r"Q:\conda_envs\anat_preprocess\python.exe"
-INFERENCE_ENV = r"Q:\conda_envs\anat_inference\python.exe"
+# PREPROCESS_ENV = r"Q:\conda_envs\anat_preprocess\python.exe"
+# INFERENCE_ENV = r"Q:\conda_envs\anat_inference\python.exe"
 
-DONE_FILE = os.path.join(PREPROCESSED_DIR, "subjects_done.json")
+# DONE_FILE = os.path.join(PREPROCESSED_DIR, "subjects_done.json")
 
-os.environ["nnUNet_results"] = r"Q:\nnUNet_results"
-os.environ["nnUNet_raw"] = r"Q:\nnUNet_raw"
-os.environ["nnUNet_preprocessed"] = r"Q:\nnUNet_preprocessed"
-os.environ["nnUNet_temp"] = r"Q:\nnUNet_temp"
+# os.environ["nnUNet_results"] = r"Q:\nnUNet_results"
+# os.environ["nnUNet_raw"] = r"Q:\nnUNet_raw"
+# os.environ["nnUNet_preprocessed"] = r"Q:\nnUNet_preprocessed"
+# os.environ["nnUNet_temp"] = r"Q:\nnUNet_temp"
 
-os.environ["TMP"] = rf"{BASE_DIR}\temp"
-os.environ["TEMP"] = rf"{BASE_DIR}\temp"
-os.environ["TMPDIR"] = rf"{BASE_DIR}\temp"
+# os.environ["TMP"] = rf"{BASE_DIR}\temp"
+# os.environ["TEMP"] = rf"{BASE_DIR}\temp"
+# os.environ["TMPDIR"] = rf"{BASE_DIR}\temp"
 
-os.environ["TF_ENABLE_ONEDNN_OPTS"] = "0"
-os.environ["XDG_CACHE_HOME"] = r"Q:\cache"
-os.environ["KERAS_HOME"] = r"Q:\cache\keras"
+# os.environ["TF_ENABLE_ONEDNN_OPTS"] = "0"
+# os.environ["XDG_CACHE_HOME"] = r"Q:\cache"
+# os.environ["KERAS_HOME"] = r"Q:\cache\keras"
+from config.paths import *
+from config.paths import setup_env
+
+setup_env()
 
 # to execute shell commands
 def run_command(command_list):
@@ -350,7 +354,7 @@ def inference():
     print(f"\nRunning inference on {len(pending_cases)} new cases")
 
     cmd = [
-        r"Q:\conda_envs\anat_inference\Scripts\nnUNetv2_predict.exe",
+        NNUNET_PREDICT_EXE,
         "-d", "096",
         # "-i", PREPROCESSED_DIR,
         "-i", temp_dir,
@@ -390,8 +394,8 @@ if __name__ == "__main__":
     # # print(torch.cuda.get_device_name(0))
 
     # print("\n=== NORMALIZING FILENAMES ===")
-    # normalize_filenames(T1_DIR, "T1")
-    # normalize_filenames(T2_DIR, "T2")
+    normalize_filenames(T1_DIR, "T1")
+    normalize_filenames(T2_DIR, "T2")
 
     print("\n=== PREPROCESSING (RESUMABLE) ===")
 

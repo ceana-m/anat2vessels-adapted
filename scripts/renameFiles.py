@@ -1,7 +1,5 @@
 import os
-
-t1_dir = r"Q:\anat2vessels\data\t1w"
-t2_dir = r"Q:\anat2vessels\data\t2w"
+from config.paths import T1_DIR, T2_DIR
 
 def rename(folder, modality):
     for f in os.listdir(folder):
@@ -21,5 +19,5 @@ def rename(folder, modality):
             os.path.join(folder, new_name)
         )
 
-rename(t1_dir, "T1")
-rename(t2_dir, "T2")
+rename(T1_DIR, "T1")
+rename(T2_DIR, "T2")
