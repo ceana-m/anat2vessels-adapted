@@ -2,7 +2,7 @@
 data/
 features/
 misc/
-observations/
+notebooks
 papers/
 preprocessed/
 predictions/

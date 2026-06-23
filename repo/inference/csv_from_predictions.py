@@ -113,14 +113,6 @@ def out_list_to_df(out_list):
                 item['num_small_components_50']
             )
 
-            out['bifurcation_count'] = (
-                item['bifurcation_count']
-            )
-
-            out['endpoint_count'] = (
-                item['endpoint_count']
-            )
-
             # out['endpoint_density'] = (
             #     item['endpoint_density']
             # )

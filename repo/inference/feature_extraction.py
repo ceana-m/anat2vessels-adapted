@@ -186,11 +186,6 @@ def extract_features(nifti_path):
 
     bifurcations, endpoints = _get_bifurcation_endpoint_arrays(skeleton)
 
-    bifurcation_count = int(bifurcations.sum())
-    endpoint_count = int(endpoints.sum())
-
-    # out['bifurcations'], out['endpoints'] = float(bifurcations.sum()), endpoints.sum()
-    #
     # out['total_volume'] = float(segmentation.sum() * np.prod(voxel_spacing))
     ##
     radius_matrix = _extract_radius(segmentation, skeleton, voxel_spacing)
@@ -245,9 +240,6 @@ def extract_features(nifti_path):
         ),
 
         'num_branches': len(branch_labels),
-
-        'bifurcation_count': bifurcation_count,
-        'endpoint_count': endpoint_count,
 
         'total_branch_length': total_branch_length,
         # 'endpoint_density': endpoint_density,
