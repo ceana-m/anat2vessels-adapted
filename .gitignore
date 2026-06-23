@@ -1,0 +1,29 @@
+# Data and outputs
+data/
+features/
+misc/
+observations/
+papers/
+preprocessed/
+predictions/
+repo_modified/
+temp/
+workspaces/
+
+# Models
+*.zip
+t1t2_model/
+model/
+*.pth
+*.pkl
+*.nii
+*.nii.gz
+__pycache__/
+
+# Python noise
+__pycache__/
+*.pyc
+
+# OS
+.DS_Store
+Thumbs.db
