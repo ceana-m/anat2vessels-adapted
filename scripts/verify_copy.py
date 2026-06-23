@@ -1,5 +1,5 @@
-import os
 from utils import is_valid_nifti
+from pathlib import Path
 from config.paths import T1_SOURCE, T2_SOURCE, T1_DIR, T2_DIR
 
 # ============================================
@@ -10,12 +10,10 @@ def get_source_files(root_dir):
 
     files_set = set()
 
-    for root, dirs, files in os.walk(root_dir):
+    for f in root_dir.rglob("*"):
 
-        for f in files:
-
-            if is_valid_nifti(f):
-                files_set.add(f)
+        if f.is_file() and is_valid_nifti(f.name):
+            files_set.add(f.name)
 
     return files_set
 
@@ -24,10 +22,10 @@ def get_dest_files(root_dir):
 
     files_set = set()
 
-    for f in os.listdir(root_dir):
+    for f in root_dir.iterdir():
 
-        if is_valid_nifti(f):
-            files_set.add(f)
+        if f.is_file() and is_valid_nifti(f.name):
+            files_set.add(f.name)
 
     return files_set
 
@@ -44,33 +42,20 @@ def verify(source_dir, dest_dir, label):
     extra = dest_files - source_files
 
     print(f"\n========== {label} ==========")
-
     print(f"Source count: {len(source_files)}")
     print(f"Destination count: {len(dest_files)}")
 
-    # ----------------------------------------
-    # PERFECT MATCH
-    # ----------------------------------------
-
-    if len(missing) == 0 and len(extra) == 0:
+    if not missing and not extra:
         print("\nSUCCESS: All files copied correctly.")
         return
 
-    # ----------------------------------------
-    # REPORT ISSUES
-    # ----------------------------------------
-
-    if len(missing) > 0:
-
+    if missing:
         print(f"\nMissing files ({len(missing)}):")
-
         for f in sorted(missing):
             print(f)
 
-    if len(extra) > 0:
-
+    if extra:
         print(f"\nExtra files ({len(extra)}):")
-
         for f in sorted(extra):
             print(f)
 
@@ -80,14 +65,5 @@ def verify(source_dir, dest_dir, label):
 
 if __name__ == "__main__":
 
-    verify(
-        T1_SOURCE,
-        T1_DIR,
-        "T1"
-    )
-
-    verify(
-        T2_SOURCE,
-        T2_DIR,
-        "T2"
-    )
+    verify(T1_SOURCE, T1_DIR, "T1")
+    verify(T2_SOURCE, T2_DIR, "T2")

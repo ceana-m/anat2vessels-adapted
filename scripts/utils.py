@@ -1,6 +1,5 @@
-def is_valid_nifti(filename):
+from pathlib import Path
 
-    return (
-        filename.endswith(".nii.gz")
-        and not filename.startswith("._")
-    )
+def is_valid_nifti(filename):
+    name = Path(filename).name
+    return name.endswith(".nii.gz") and not name.startswith("._")
