@@ -21,7 +21,7 @@ def main(args):
         try:
             if f.endswith('.nii.gz'):
                 path = os.path.join(args.input_dir, f)
-                sub_id = f.split('_')[0]
+                sub_id = f.replace(".nii.gz", "").replace(".nii", "")
                 out = extract_features(path)
                 out['sub_id'] = sub_id
                 data_list.append(out)
@@ -32,6 +32,23 @@ def main(args):
     if not data_list:
         print("No valid data was processed. Check the input files and error messages above.")
         return
+    
+    ## Save radii separately
+    radius_dir = os.path.join(
+        os.path.dirname(args.output_path),
+        "radii"
+    )
+    os.makedirs(radius_dir, exist_ok=True)
+
+    for item in data_list:
+        np.save(
+            os.path.join(
+                radius_dir,
+                f"{item['sub_id']}_radii.npy"
+            ),
+            np.array(item['radius_list'])
+        )
+    ##
 
     df = out_list_to_df(data_list)
     df.to_csv(args.output_path, index=False)
@@ -47,7 +64,7 @@ def ray_main(args):
     for f in files:
         if f.endswith('.nii.gz'):
             path = os.path.join(args.input_dir, f)
-            sub_id = f.split('_')[0]
+            sub_id = f.replace(".nii.gz", "").replace(".nii", "")
             future = remote.remote(path)
             futures.append((future, sub_id))
 
@@ -79,11 +96,47 @@ def out_list_to_df(out_list):
             out['endpoints'] = float(item['endpoints'].sum())
             out['radius_list'] = item['radius_list']
 
+            ## Added features for analysis
+            out['num_components'] = item['num_components']
+
+            out['largest_component_fraction'] = (
+                item['largest_component_fraction']
+            )
+
+            out['largest_component_volume_mm3'] = item['largest_component_volume_mm3']
+
+            out['num_small_components_10'] = (
+                item['num_small_components_10']
+            )
+
+            out['num_small_components_50'] = (
+                item['num_small_components_50']
+            )
+
+            out['bifurcation_count'] = (
+                item['bifurcation_count']
+            )
+
+            out['endpoint_count'] = (
+                item['endpoint_count']
+            )
+
+            # out['endpoint_density'] = (
+            #     item['endpoint_density']
+            # )
+
+            # out['bifurcation_density'] = (
+            #     item['bifurcation_density']
+            # )
+            ##
+
             # Handle potential empty radius list
             if item['radius_list']:
                 out['mean_radius'] = float(sum(item['radius_list']) / len(item['radius_list']))
                 out['max_radius'] = float(max(item['radius_list']))
+
                 out['min_radius'] = float(min(item['radius_list']))
+                out['radius_list'] = []
             else:
                 out['mean_radius'] = 0.0
                 out['max_radius'] = 0.0
