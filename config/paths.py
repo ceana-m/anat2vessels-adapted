@@ -32,7 +32,7 @@ PREDICTIONS_DIR = BASE_DIR / "predictions"
 FEATURES_DIR = BASE_DIR / "features"
 MODEL_DIR = BASE_DIR / "model"
 
-REPO_DIR = BASE_DIR / "repo" / "anat2vessels" / "inference"
+CORE_DIR = BASE_DIR / "core" / "anat2vessels" / "inference"
 
 DONE_FILE = PREPROCESSED_DIR / "subjects_done.json"
 

@@ -121,10 +121,8 @@ def normalize_filenames(folder, modality):
             print(new_name)
             continue
 
-        print(f"\nRenaming:")
-        print(f"{f}")
-        print("→")
-        print(f"{new_name}\n")
+        print(f"\nRenaming: {f}")
+        print(f"→{new_name}\n")
 
         old_path.rename(new_path)
 
@@ -208,11 +206,11 @@ def preprocess_subject(case_id, t1_file, t2_file):
         "--skull_strip", "True"
     ]
 
-    print("\nRUNNING FROM:", REPO_DIR)
-    print("SCRIPT EXISTS:", (REPO_DIR / "preprocess_imgs.py").exists())
+    print("\nRUNNING FROM:", CORE_DIR)
+    print("SCRIPT EXISTS:", (CORE_DIR / "preprocess_imgs.py").exists())
     print("PYTHON:", PREPROCESS_ENV)
 
-    result = subprocess.run(cmd, cwd=REPO_DIR, text=True)
+    result = subprocess.run(cmd, cwd=CORE_DIR, text=True)
 
     print("\n===== PREPROCESS DEBUG =====")
     print("RETURN CODE:", result.returncode)
