@@ -15,19 +15,19 @@ ref_img = ants.image_read('ref.nii.gz')
 
 ref_img_pth = 'ref.nii.gz'
 
-def extract_brain(img, modality='t1'):
+def extract_brain(img, modality):
     probability_mask = antspynet.brain_extraction(img, modality=modality)
     brain_mask = ants.get_mask(probability_mask, low_thresh=0.5)
     brain_extracted = img * brain_mask
     return brain_extracted
 
 
-def process_img(img_pth, output_dir, file_name, ref_img_pth, skull_strip=False):
+def process_img(img_pth, output_dir, file_name, ref_img_pth, skull_strip=False, modality='t1'):
     img = ants.image_read(img_pth)
     ref_img = ants.image_read(ref_img_pth)
 
     if skull_strip:
-        img = extract_brain(img)
+        img = extract_brain(img, modality)
 
     img_reg = ants.registration(fixed=ref_img, moving=img,
                                 type_of_transform='Rigid')
@@ -94,11 +94,11 @@ if __name__ == '__main__':
 
                 t2_pth = os.path.join(args.t2_dir, t2_file)
                 t2_file_name = f'{subid}_0001.nii.gz'
-                process_img(t2_pth, args.output_dir, t2_file_name, ref_img_pth, skull_strip=args.skull_strip)
+                process_img(t2_pth, args.output_dir, t2_file_name, ref_img_pth, skull_strip=args.skull_strip, modality='t2')
 
             t1_pth = os.path.join(args.t1_dir, t1_file)
             t1_file_name = f'{subid}_0000.nii.gz'
-            process_img(t1_pth, args.output_dir, t1_file_name, ref_img_pth, skull_strip=args.skull_strip)
+            process_img(t1_pth, args.output_dir, t1_file_name, ref_img_pth, skull_strip=args.skull_strip, modality='t1')
         except Exception as e:
             print(f"Error processing subject {subid}: {str(e)}")
             return
