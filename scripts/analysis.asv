@@ -1,0 +1,181 @@
+T = readtable('features.csv');
+
+
+%% Extract subject and visit
+
+parts = split(string(T.sub_id),'_');
+
+T.visit = parts(:,end);
+
+T.subject = join(parts(:,1:end-1),'_');
+
+T.subject = string(T.subject);
+T.visit = string(T.visit);
+
+%% DISTRIBUTIONAL ANALYSIS
+%% Get features
+features = {
+'total_volume'
+'num_branches'
+'bifurcation_count'
+'endpoint_count'
+'num_components'
+'largest_component_fraction'
+'largest_component_volume_mm3'
+'mean_radius'
+'mean_tortuosity'
+'total_branch_length'
+};
+
+%% Plot hists
+for i=1:length(features)
+
+    figure('IntegerHandle','off', ...
+       'Name', " Hist " + features{i}, ...
+       'NumberTitle','off');
+
+    histogram(T.(features{i}));
+
+    xlabel(features{i}, 'Interpreter','none')
+    ylabel('Count')
+
+    title(features{i},...
+        'Interpreter','none')
+    grid minor
+
+end
+
+%% boxplots
+for i=1:length(features)
+
+    figure('IntegerHandle','off', ...
+       'Name', "Box " + features{i}, ...
+       'NumberTitle','off');
+
+    boxplot(T.(features{i}))
+    xticklabels({})
+    xlabel(features{i}, 'Interpreter','none')
+
+    title(['Boxplot: ' features{i}],...
+        'Interpreter','none')
+
+    grid minor
+
+end
+
+%% Summary statistics
+summary_table = table();
+
+for i=1:length(features)
+
+    x = T.(features{i});
+
+    summary_table.feature{i}=features{i};
+
+    summary_table.mean(i)=mean(x);
+
+    summary_table.std(i)=std(x);
+
+    summary_table.median(i)=median(x);
+
+    summary_table.min(i)=min(x);
+
+    summary_table.max(i)=max(x);
+
+end
+
+
+disp(summary_table)
+
+
+%% LONGITUDINAL CONSISTENCY
+
+subjects = unique(T.subject);
+
+metrics = {
+    'total_volume'
+    'num_branches'
+    'largest_component_fraction'
+    'mean_radius'
+    'mean_tortuosity'
+    'total_branch_length'
+
+};
+for m=1:length(metrics)
+    figure('IntegerHandle','off', ...
+           'Name', "Box " + metrics{m}, ...
+           'NumberTitle','off')
+    hold on
+    
+    for i=1:length(subjects)
+        idx=T.subject==subjects(i);
+        temp=T(idx,:);
+        
+        [~,ord]=sort(temp.visit);
+        temp=temp(ord,:);
+    
+        plot(1:height(temp), temp.(metrics{m}),'-o');
+    end
+    xticks([1 2 3])
+    xticklabels({'V1','V2','V3'})
+    ylabel(metrics{m}, 'Interpreter','none')
+    
+    title(metrics{m},...
+    'Interpreter','none')
+    legend(subjects, 'Interpreter','none')
+    grid minor
+    
+    hold off
+
+end
+
+%% within subject cv
+metrics = {
+
+'total_volume'
+'num_branches'
+'largest_component_fraction'
+'mean_radius'
+'mean_tortuosity'
+'total_branch_length'
+
+};
+
+
+
+CV_table = table();
+
+
+for s=1:length(subjects)
+
+
+idx=T.subject==subjects(s);
+
+
+temp=T(idx,:);
+
+
+CV_table.subject(s)=subjects(s);
+
+
+
+for j=1:length(metrics)
+
+
+
+x=temp.(metrics{j});
+
+
+cv = std(x)/mean(x);
+
+
+
+CV_table.(metrics{j})(s)=cv;
+
+
+end
+
+end
+
+
+disp(CV_table)
