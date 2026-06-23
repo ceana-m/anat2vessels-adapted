@@ -43,6 +43,43 @@ def _get_labeled_branches(skeleton):
             branch_names.append(i)
     return labeled_branches, branch_names
 
+def _get_connected_component_metrics(segmentation, voxel_spacing):
+
+    struct = np.ones((3, 3, 3), dtype=np.uint8)
+
+    labels, num_components = ndi.label(segmentation, structure=struct)
+
+    if num_components == 0:
+        return {
+            'num_components': 0,
+            'largest_component_fraction': 0.0,
+            'largest_component_volume_mm3': 0.0,
+            'num_small_components_10': 0,
+            'num_small_components_50': 0
+        }
+
+    component_sizes = np.bincount(labels.ravel())[1:]
+
+    voxel_volume = np.prod(voxel_spacing)
+
+    largest_component_voxels = component_sizes.max()
+    total_voxels = component_sizes.sum()
+
+    return {
+        'num_components': int(num_components),
+
+        # fraction is already unitless (keep voxel space)
+        'largest_component_fraction': float(largest_component_voxels / total_voxels),
+
+        # physical volume 
+        'largest_component_volume_mm3': float(largest_component_voxels * voxel_volume),
+
+        'total_volume_mm3': float(total_voxels * voxel_volume),
+
+        'num_small_components_10': int(np.sum(component_sizes < 10)),
+        'num_small_components_50': int(np.sum(component_sizes < 50))
+    }
+
 def _extract_radius(segmentation, centerlines, voxel_spacing):
     image = segmentation
     skeleton = centerlines
@@ -145,7 +182,12 @@ def extract_features(nifti_path):
 
     skeleton, segmentation, voxel_spacing = _get_skel_seg_spacing(nifti_path)
 
+    cc_metrics = _get_connected_component_metrics(segmentation, voxel_spacing)
+
     bifurcations, endpoints = _get_bifurcation_endpoint_arrays(skeleton)
+
+    bifurcation_count = int(bifurcations.sum())
+    endpoint_count = int(endpoints.sum())
 
     # out['bifurcations'], out['endpoints'] = float(bifurcations.sum()), endpoints.sum()
     #
@@ -173,6 +215,12 @@ def extract_features(nifti_path):
     branch_list = [{'full_path': float(branch['full_path']),
                     'straight_path': float(branch['straight_path']),
                     'tortuosity': float(branch['tortuosity'])} for branch in branches]
+    
+    total_branch_length = float(
+        np.sum(
+            [branch['full_path'] for branch in branches]
+        )
+    )
     # out['branch_list'] = branch_list
     # out['branch_lengths_list'] = [float(branch['full_path']) for branch in branches]
     # out['total_branch_length'] = np.sum(out['branch_lengths_list'])
@@ -191,7 +239,20 @@ def extract_features(nifti_path):
         'bifurcations': bifurcations,
         'endpoints': endpoints,
         'radius_list': radius_list,
-        'total_volume': float(segmentation.sum() * np.prod(voxel_spacing)),
-        'num_branches': len(branch_labels)
-        }
+
+        'total_volume': float(
+            segmentation.sum() * np.prod(voxel_spacing)
+        ),
+
+        'num_branches': len(branch_labels),
+
+        'bifurcation_count': bifurcation_count,
+        'endpoint_count': endpoint_count,
+
+        'total_branch_length': total_branch_length,
+        # 'endpoint_density': endpoint_density,
+        # 'bifurcation_density': bifurcation_density,
+
+        **cc_metrics
+    }
     return out
