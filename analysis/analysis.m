@@ -1,252 +1,289 @@
-clear all; clc
-%%
-T = readtable('features.csv');
+clear all; close all;
+%% Load table
+featureTable = readtable('features.csv');
+
 %% Extract subject and visit
+parts = split(string(featureTable.sub_id), '_');
 
-parts = split(string(T.sub_id), '_');
+featureTable.visit = parts(:,end);
 
-T.visit = parts(:,end);
-
-T.subject = join(parts(:,1:end-1), '_');
-T.subject = string(T.subject);
+featureTable.subject = join(parts(:,1:end-1), '_');
+featureTable.subject = string(featureTable.subject);
 
 % cohort = C or P (from subject string)
-tokens = regexp(T.subject, 'CAL_(C\d+|P\d+)', 'tokens');
+tokens = regexp(featureTable.subject, 'CAL_(C\d+|P\d+)', 'tokens');
 
-T.cohort = string(cellfun(@(x) x{1}, tokens, 'UniformOutput', false));
+featureTable.cohort = string(cellfun(@(x) x{1}, tokens, 'UniformOutput', false));
 
-% --- ADD THIS HERE ---
-% groupType = extractBetween(T.cohort, 1, 1);
-% groupType = string(groupType);
+subjects = unique(featureTable.subject);
 
-% T.cohort = string(extractBetween(T.subject, "CAL_", "_"));
-
-% groupType = extractBefore(T.cohort, 2);
-% groupType = string(groupType);
-
-%% DISTRIBUTIONAL ANALYSIS
-%% Get features
-% features = {
-%     'total_volume'
-%     'num_branches'
-%     'bifurcation_count'
-%     'endpoint_count'
-%     'num_components'
-%     'largest_component_fraction'
-%     'largest_component_volume_mm3'
-%     'mean_radius'
-%     'mean_tortuosity'
-%     'total_branch_length'
-% };
-
-
-subjects = unique(T.subject);
-visits = ["V1","V2","V3"];
-
-%% spearman preprocessing
-data = struct();
-
-features = ["total_volume","num_branches","bifurcation_count", ...
-            "endpoint_count","num_components", ...
-            "largest_component_fraction","mean_radius", ...
-            "mean_tortuosity","total_branch_length"];
-
-for f = 1:length(features)
-    feat = features(f);
-    
-    M = nan(length(subjects), length(visits));
-    
-    for i = 1:length(subjects)
-        for j = 1:length(visits)
-            
-            idx = T.subject == subjects(i) & T.visit == visits(j);
-            
-            if any(idx)
-                M(i,j) = T{idx, feat};
-            end
-        end
-    end
-    
-    data.(feat) = M;
-end
-%% spearman rank stability
-spearman_results = table();
-
-row = 1;
-
-for f = 1:length(features)
-    feat = features(f);
-    M = data.(feat);
-    
-    v1 = M(:,1);
-    v2 = M(:,2);
-    v3 = M(:,3);
-    
-    spearman_results.feature(row) = feat;
-    spearman_results.V1_V2(row) = corr(v1, v2, 'Type','Spearman','Rows','complete');
-    spearman_results.V1_V3(row) = corr(v1, v3, 'Type','Spearman','Rows','complete');
-    spearman_results.V2_V3(row) = corr(v2, v3, 'Type','Spearman','Rows','complete');
-    
-    row = row + 1;
-end
-
-disp(spearman_results)
-%% heatmap
-figure;
-
-dataMat = [
-    spearman_results.V1_V2, ...
-    spearman_results.V1_V3, ...
-    spearman_results.V2_V3
+%% Define constants
+VISITS = ["V1","V2","V3"];
+FEATURE_NAMES = [
+    "total_volume", ...
+    "num_branches", ...
+    "bifurcation_count", ...
+    "endpoint_count", ...
+    "num_components", ...
+    "largest_component_fraction", ...
+    "largest_component_volume_mm3", ...
+    "mean_radius", ...
+    "mean_tortuosity", ...
+    "total_branch_length"
 ];
 
-xLabels = ["V1-V2","V1-V3","V2-V3"]';   % FORCE column vector
-yLabels = string(spearman_results.feature);
+NUM_BINS_HIST = 10;
+BOXPLOT_GROUPING = "cohortvisit"; % "cohortvisit", "cohort", "visit"
+LONGITUDINAL_GROUPING = 'cohort'; % "all","cohort","control","patient"
 
-figure;
+%% DISTRIBUTIONAL ANALYSIS
+plotBoxplots(featureTable, FEATURE_NAMES, BOXPLOT_GROUPING)
+plotHistograms(featureTable, FEATURE_NAMES, NUM_BINS_HIST)
+printSummaryTable(featureTable, FEATURE_NAMES)
 
-heatmap(xLabels, yLabels, dataMat, 'Interpreter','none');
-title("Spearman Rank Stability Across Visits");
-%% Plot hists
-for i=1:length(features)
-    figure('IntegerHandle','off', ...
-       'Name', " Hist " + features{i}, ...
-       'NumberTitle','off');
+%% LONGITUDINAL ANALYSIS
+plotMetricsOverTime(featureTable, FEATURE_NAMES, subjects, VISITS, LONGITUDINAL_GROUPING)
 
-    histogram(T.(features{i}), 10);
+% spearmanProcessing(featureTable, FEATURE_NAMES, subjects, VISITS)
 
-    xlabel(features{i}, 'Interpreter','none')
-    ylabel('Count')
-
-    title(features{i}, 'Interpreter','none')
-    grid minor
-end
-
-%% boxplots
-for i=1:length(features)
-    figure('IntegerHandle','off', ...
-       'Name', "Box " + features{i}, ...
-       'NumberTitle','off');
-
-    boxplot(T.(features{i}))
-    xticklabels({})
-    xlabel(features{i}, 'Interpreter','none')
-
-    title(['Boxplot: ' features{i}], 'Interpreter','none')
-    grid minor
-end
-
-%% Summary statistics
-summary_table = table();
-
-for i=1:length(features)
-    x = T.(features{i});
-    summary_table.feature{i}=features{i};
-    summary_table.mean(i)=mean(x);
-    summary_table.std(i)=std(x);
-    summary_table.median(i)=median(x);
-    summary_table.min(i)=min(x);
-    summary_table.max(i)=max(x);
-
-end
-disp(summary_table)
-
-
-%% LONGITUDINAL CONSISTENCY (for every subject)
-
-metrics = {
-    'total_volume'
-    'num_branches'
-    'largest_component_fraction'
-    'mean_radius'
-    'mean_tortuosity'
-    'total_branch_length'
-};
-
-for m=1:length(metrics)
-    figure('IntegerHandle','off', ...
-           'Name', "Longitude " + metrics{m}, ...
-           'NumberTitle','off')
-    hold on
+%% Helper functions
+function plotMetricsOverTime(featureTable, featureNames, subjects, visits, groupMode)
+    % argument validation
+    if nargin < 5
+        groupMode = "all";
+    end
     
-    for i=1:length(subjects)
-        idx=T.subject==subjects(i);
-        temp=T(idx,:);
+    groupMode = lower(string(groupMode));
+    
+    colors = containers.Map;
+    colors("C") = [0 0.4470 0.7410];
+    colors("P") = [0.8500 0.3250 0.0980];
+    
+    validModes = ["all","cohort","control","patient"];
+    if ~ismember(groupMode, validModes)
+        error("Invalid groupMode. Use: all, cohort, control, patient");
+    end
+    
+    % process features
+    for m = 1:length(featureNames)
+        figure('IntegerHandle','off', ...
+               'Name',"Longitudinal " + featureNames{m}, ...
+               'NumberTitle','off')
+        hold on
+
+        %% =========================
+        %  INDIVIDUAL SUBJECTS
+        %% =========================
+        for i = 1:length(subjects)
+            idx = featureTable.subject == subjects(i);
+            temp = featureTable(idx,:);
+    
+            [~,ord] = sort(temp.visit);
+            temp = temp(ord,:);
+    
+            cohort = temp.cohort(1);
+            groupType = extractBefore(cohort,2);  % "C" or "P"
+    
+            switch groupMode
+                case "control"
+                    if groupType ~= "C", continue; end
+                case "patient"
+                    if groupType ~= "P", continue; end
+            end
+    
+            % plot individuals
+            if groupMode == "cohort"
+                plot(1:height(temp), temp.(featureNames{m}), '-o', ...
+                    'Color', colors(groupType), ...
+                    'DisplayName', char(subjects(i)));
+            else
+                plot(1:height(temp), temp.(featureNames{m}), '-o', ...
+                    'DisplayName', char(subjects(i)));
+            end
+        end
+    
+        %% =========================
+        %  GROUP MEANS
+        %% =========================
+    
+        if groupMode == "cohort" || groupMode == "control" || groupMode == "patient"
+    
+            meanControl = nan(1,length(visits));
+            meanPatient = nan(1,length(visits));
+    
+            for v = 1:length(visits)
+    
+                idxV = featureTable.visit == visits(v);
+    
+                if groupMode ~= "patient"
+                    idxC = idxV & startsWith(featureTable.cohort,"C");
+                    meanControl(v) = mean(featureTable{idxC, featureNames{m}}, 'omitnan');
+                end
+    
+                if groupMode ~= "control"
+                    idxP = idxV & startsWith(featureTable.cohort,"P");
+                    meanPatient(v) = mean(featureTable{idxP, featureNames{m}}, 'omitnan');
+                end
+    
+            end
+    
+            % plot control mean
+            if groupMode ~= "patient"
+                plot(1:length(visits), meanControl, '--s', ...
+                    'LineWidth', 3, 'Color', colors("C"), ...
+                    'DisplayName', 'Control Mean');
+            end
+    
+            % plot patient mean
+            if groupMode ~= "control"
+                plot(1:length(visits), meanPatient, '--s', ...
+                    'LineWidth', 3, 'Color', colors("P"), ...
+                    'DisplayName', 'Patient Mean');
+            end
+    
+        end
+    
+        %% =========================
+        %  FORMATTING
+        %% =========================
+        xticks(1:length(visits))
+        xticklabels(visits)
+    
+        xlabel('Visit')
+        ylabel(featureNames{m}, 'Interpreter','none')
+        title(featureNames{m}, 'Interpreter','none')
+    
+        grid minor
+    
+        legend('Location','best', 'Interpreter','none')
+    
+        hold off
+    end
+end
+
+function printSummaryTable(featureTable, featureNames)
+    summary_table = table();
+
+    for i=1:length(featureNames)
+        x = featureTable.(featureNames{i});
+        summary_table.feature{i}=featureNames{i};
+        summary_table.mean(i)=mean(x);
+        summary_table.std(i)=std(x);
+        summary_table.median(i)=median(x);
+        summary_table.min(i)=min(x);
+        summary_table.max(i)=max(x);
+    
+    end
+    disp(summary_table)
+end
+
+function plotBoxplots(featureTable, featureNames, grouping)
+    groupType = extractBetween(featureTable.cohort,1,1);
+    groupType = string(groupType);
+    
+    featureTable.groupType = categorical(groupType,...
+        ["C","P"]);
+    
+    for i=1:length(featureNames)
+        boxTitle = "Boxplot " + featureNames{i};
+        figure('IntegerHandle','off', ...
+           'Name', boxTitle, ...
+           'NumberTitle','off');
+        if strcmp(grouping, "visit")
+            % just visits
+            boxplot(featureTable.(featureNames{i}), T.visit)
+        elseif strcmp(grouping, "cohort")
+            % just patients
+            boxplot(featureTable.(featureNames{i}),T.groupType)
+        elseif strcmp(grouping, "cohortvisit")
+            % visits x patients
+            groups = strcat(string(featureTable.groupType),"_",string(featureTable.visit));
+            boxplot(featureTable.(featureNames{i}),groups)
+        else
+            error("Incorrect grouping. Must be visit, cohort, or cohortvisit")
+        end
+    
+        xlabel('Visit')
+        ylabel(featureNames{i},'Interpreter','none')
         
-        [~,ord]=sort(temp.visit);
-        temp=temp(ord,:);
-    
-        plot(1:height(temp), temp.(metrics{m}),'-o');
+        title(boxTitle,'Interpreter','none')
+        
+        grid minor
     end
-    xticks([1 2 3])
-    xticklabels({'V1','V2','V3'})
-    ylabel(metrics{m}, 'Interpreter','none')
-    
-    title(metrics{m},...
-    'Interpreter','none')
-    legend(subjects, 'Interpreter','none')
-    grid minor
-    
-    hold off
-
 end
 
-%% split by patients vs controls
-
-figure
-hold on
-
-colors = containers.Map;
-colors("C") = [0 0.447 0.741];
-colors("P") = [0.85 0.325 0.098];
-
-for i = 1:length(subjects)
-
-    idx = T.subject == subjects(i);
-    temp = T(idx,:);
-
-    [~,ord] = sort(temp.visit);
-    temp = temp(ord,:);
-
-    cohort = temp.cohort(1);
-    groupType = extractBefore(cohort, 2);
-
-    plot(1:height(temp), temp.total_volume, '-o', ...
-        'Color', colors(groupType), ...
-        'HandleVisibility','off');
-
+function plotHistograms(featureTable, featureNames, numBins)
+    for i=1:length(featureNames)
+        histTitle = "Hist " + featureNames{i};
+        figure('IntegerHandle','off', ...
+           'Name', histTitle, ...
+           'NumberTitle','off');
+    
+        histogram(featureTable.(featureNames{i}), numBins);
+    
+        xlabel(featureNames{i}, 'Interpreter','none')
+        ylabel('Count')
+    
+        title(featureNames{i}, 'Interpreter','none')
+        grid minor
+    end
 end
 
-xticks([1 2 3])
-xticklabels({'V1','V2','V3'})
-xlabel('Visit')
-ylabel('Total Volume')
-title('Longitudinal Total Volume (C vs P)')
-
-% add dummy legend entries
-plot(nan,nan,'-o','Color',colors("C"),'DisplayName','Controls (C)')
-plot(nan,nan,'-o','Color',colors("P"),'DisplayName','Patients (P)')
-
-legend
-hold off
-
-%% within subject coefficient of variation
-% Low CVw (e.g., <5–10%): Measurements are highly repeatable within individuals.
-% Moderate CVw (e.g., 10–20%): There is noticeable biological or measurement variability.
-% High CVw (>20%): Measurements fluctuate considerably within individuals.
-
-CV_table = table();
-
-for s=1:length(subjects)
-    idx=T.subject==subjects(s);
-    temp=T(idx,:);
-    CV_table.subject(s)=subjects(s);
+function spearmanProcessing(featureTable, featureNames, subjects, visits)
+    % prepare data
+    data = struct();
     
-    for j=1:length(metrics)
-        x=temp.(metrics{j});
-        cv = std(x)/mean(x);
-        CV_table.(metrics{j})(s)=cv;
+    for f = 1:length(featureNames)
+        feat = featureNames(f);
+        
+        metricsAcrossVisits = nan(length(subjects), length(visits));
+        
+        for i = 1:length(subjects)
+            for j = 1:length(visits)
+                
+                idx = featureTable.subject == subjects(i) & featureTable.visit == visits(j);
+                
+                if any(idx)
+                    metricsAcrossVisits(i,j) = featureTable{idx, feat};
+                end
+            end
+        end
+        
+        data.(feat) = metricsAcrossVisits;
     end
 
+    % create spearman rank stability results
+    spearman_results = table();
+    row = 1;
+    for f = 1:length(featureNames)
+        feat = featureNames(f);
+        metricsAcrossVisits = data.(feat);
+        
+        v1 = metricsAcrossVisits(:,1);
+        v2 = metricsAcrossVisits(:,2);
+        v3 = metricsAcrossVisits(:,3);
+        
+        spearman_results.feature(row) = feat;
+        spearman_results.V1_V2(row) = corr(v1, v2, 'Type','Spearman','Rows','complete');
+        spearman_results.V1_V3(row) = corr(v1, v3, 'Type','Spearman','Rows','complete');
+        spearman_results.V2_V3(row) = corr(v2, v3, 'Type','Spearman','Rows','complete');
+        
+        row = row + 1;
+    end
+    disp(spearman_results)
+
+    % plot heatmap
+    dataMat = [
+        spearman_results.V1_V2, ...
+        spearman_results.V1_V3, ...
+        spearman_results.V2_V3
+    ];
+    
+    xLabels = ["V1-V2","V1-V3","V2-V3"]';
+    yLabels = string(spearman_results.feature);
+    
+    figure;
+    
+    heatmap(xLabels, yLabels, dataMat, 'Interpreter','none');
+    title("Spearman Rank Stability Across Visits");
 end
-disp(CV_table)

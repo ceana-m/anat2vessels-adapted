@@ -9,6 +9,7 @@ predictions/
 repo_modified/
 temp/
 workspaces/
+sandbox/
 
 # Models
 *.zip
