@@ -14,11 +14,6 @@ featureTable.subject = string(featureTable.subject);
 tokens = regexp(featureTable.subject, 'CAL_(C\d+|P\d+)', 'tokens');
 
 featureTable.cohort = string(cellfun(@(x) x{1}, tokens, 'UniformOutput', false));
-groupType = extractBetween(featureTable.cohort,1,1);
-groupType = string(groupType);
-
-featureTable.groupType = categorical(groupType,...
-    ["C","P"]);
 
 subjects = unique(featureTable.subject);
 
@@ -42,14 +37,14 @@ BOXPLOT_GROUPING = "cohortvisit"; % "cohortvisit", "cohort", "visit"
 LONGITUDINAL_GROUPING = 'cohort'; % "all","cohort","control","patient"
 
 %% DISTRIBUTIONAL ANALYSIS
-plotBoxplots(featureTable, FEATURE_NAMES, BOXPLOT_GROUPING)
+% plotBoxplots(featureTable, FEATURE_NAMES, BOXPLOT_GROUPING)
 plotHistograms(featureTable, FEATURE_NAMES, NUM_BINS_HIST)
-printSummaryTable(featureTable, FEATURE_NAMES)
+% printSummaryTable(featureTable, FEATURE_NAMES)
 
 %% LONGITUDINAL ANALYSIS
 plotMetricsOverTime(featureTable, FEATURE_NAMES, subjects, VISITS, LONGITUDINAL_GROUPING)
 
-spearmanProcessing(featureTable, FEATURE_NAMES, subjects, VISITS)
+% spearmanProcessing(featureTable, FEATURE_NAMES, subjects, VISITS)
 
 %% Helper functions
 function plotMetricsOverTime(featureTable, featureNames, subjects, visits, groupMode)
@@ -183,10 +178,15 @@ function printSummaryTable(featureTable, featureNames)
 end
 
 function plotBoxplots(featureTable, featureNames, grouping)
+    groupType = extractBetween(featureTable.cohort,1,1);
+    groupType = string(groupType);
+    
+    featureTable.groupType = categorical(groupType,...
+        ["C","P"]);
 
     [controls, patients] = getNumControlsPatients(featureTable);
     
-    for i=1:length(featureNames)
+    for i=1%:length(featureNames)
         boxTitle = "Boxplot " + featureNames{i};
         figure('IntegerHandle','off', ...
            'Name', boxTitle, ...
@@ -208,7 +208,7 @@ function plotBoxplots(featureTable, featureNames, grouping)
         xlabel('Visit')
         ylabel(featureNames{i},'Interpreter','none')
         
-        title(addCountsToTitle(boxTitle, controls, patients),'Interpreter','none')
+        title(addCountsToTitle(boxTitle),'Interpreter','none')
         
         grid minor
     end
@@ -221,7 +221,7 @@ function [controls, patients] = getNumControlsPatients(featureTable)
     patients = sum(featureTable.groupType(idx) == "P");
 end
 
-function updatedTitle = addCountsToTitle(title, controls, patients)
+function updatedTitle = addCountsToTitle(title)
      updatedTitle = title + " (C = " + controls + ", P = " + patients + ")";
 end
 
@@ -238,7 +238,7 @@ function plotHistograms(featureTable, featureNames, numBins)
         xlabel(featureNames{i}, 'Interpreter','none')
         ylabel('Count')
     
-        title(addCountsToTitle(featureNames{i}, controls, patients), 'Interpreter','none')
+        title(addCountsToTitle(featureNames{i}, 'Interpreter','none')
         grid minor
     end
 end
