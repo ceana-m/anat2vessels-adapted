@@ -184,13 +184,13 @@ def preprocess_subject(case_id, t1_file, t2_file):
     # COPY FILES (Path-safe)
     # ----------------------------
     shutil.copy2(
-        str(T1_DIR / t1_file),
-        str(TEMP_T1_DIR / t1_file)
+        t1_file,
+        TEMP_T1_DIR / t1_file.name
     )
 
     shutil.copy2(
-        str(Path(t2_file)),
-        str(TEMP_T2_DIR / Path(t2_file).name)
+        t2_file,
+        TEMP_T2_DIR / t2_file.name
     )
 
     # ----------------------------
@@ -406,7 +406,7 @@ if __name__ == "__main__":
         # if i == 2:
         #     continue
         # i += 1
-        # preprocess_subject(case_id, t1_file, t2_path)
+        preprocess_subject(case_id, t1_file, t2_path)
 
     print("\n=== RUNNING INFERENCE ===")
     inference()
