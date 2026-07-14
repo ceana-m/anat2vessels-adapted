@@ -3,7 +3,7 @@ from pathlib import Path
 import re
 import json
 import torch
-from utils import is_valid_nifti
+from .utils import is_valid_nifti
 import time
 import shutil
 
@@ -203,7 +203,8 @@ def preprocess_subject(case_id, t1_file, t2_file):
         "--t2_dir", str(TEMP_T2_DIR),
         "--output_dir", str(PREPROCESSED_DIR),
         "--id_delim", "_T1",
-        "--skull_strip", "True"
+        "--skull_strip", "True",
+        "--num_workers", "1"
     ]
 
     print("\nRUNNING FROM:", CORE_DIR)
@@ -411,7 +412,7 @@ if __name__ == "__main__":
     print("\n=== RUNNING INFERENCE ===")
     inference()
 
-    # print("\n=== EXTRACTING FEATURES ===")
-    # extract_features()
+    print("\n=== EXTRACTING FEATURES ===")
+    extract_features()
 
     print("\n=== PIPELINE COMPLETE ===")

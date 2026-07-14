@@ -31,6 +31,7 @@ PREPROCESSED_DIR = BASE_DIR / "preprocessed"
 PREDICTIONS_DIR = BASE_DIR / "predictions"
 FEATURES_DIR = BASE_DIR / "features"
 MODEL_DIR = BASE_DIR / "model"
+CACHE_DIR = BASE_DIR / "cache"
 
 CORE_DIR = BASE_DIR / "core" / "inference"
 
@@ -60,14 +61,13 @@ def setup_env():
 
     os.environ["TF_ENABLE_ONEDNN_OPTS"] = "0"
 
-    os.environ["nnUNet_results"] = r"Q:\nnUNet_results"
-    os.environ["nnUNet_raw"] = r"Q:\nnUNet_raw"
-    os.environ["nnUNet_preprocessed"] = r"Q:\nnUNet_preprocessed"
-    os.environ["nnUNet_temp"] = r"Q:\nnUNet_temp"
+    os.environ["nnUNet_results"] = str(MODEL_DIR)
+    os.environ["nnUNet_raw"]          = str(TEMP_DIR / "nnunet_raw")
+    os.environ["nnUNet_preprocessed"] = str(TEMP_DIR / "nnunet_preprocessed")
 
     os.environ["TMP"] = str(TEMP_DIR)
     os.environ["TEMP"] = str(TEMP_DIR)
     os.environ["TMPDIR"] = str(TEMP_DIR)
 
-    os.environ["XDG_CACHE_HOME"] = r"Q:\cache"
-    os.environ["KERAS_HOME"] = r"Q:\cache\keras"
+    os.environ["XDG_CACHE_HOME"] = str(CACHE_DIR)
+    os.environ["KERAS_HOME"] = str(CACHE_DIR / "keras")

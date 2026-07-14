@@ -11,14 +11,19 @@ featureTable.subject = join(parts(:,1:end-1), '_');
 featureTable.subject = string(featureTable.subject);
 
 % cohort = C or P (from subject string)
-tokens = regexp(featureTable.subject, 'CAL_(C\d+|P\d+)', 'tokens');
+featureTable.groupType = strings(height(featureTable),1);
+for i = 1:height(featureTable)
 
-featureTable.cohort = string(cellfun(@(x) x{1}, tokens, 'UniformOutput', false));
-groupType = extractBetween(featureTable.cohort,1,1);
-groupType = string(groupType);
+    match = regexp(featureTable.subject(i), '_(C|P)\d+$', 'tokens');
 
-featureTable.groupType = categorical(groupType,...
-    ["C","P"]);
+    if ~isempty(match)
+        featureTable.groupType(i) = string(match{1}{1});
+    else
+        warning("Could not determine cohort for %s", featureTable.subject(i))
+    end
+
+end
+featureTable.groupType = categorical(featureTable.groupType, ["C","P"]);
 
 subjects = unique(featureTable.subject);
 
@@ -27,8 +32,8 @@ VISITS = ["V1","V2","V3"];
 FEATURE_NAMES = [
     "total_volume", ...
     "num_branches", ...
-    "bifurcation_count", ...
-    "endpoint_count", ...
+    "bifurcations", ...
+    "endpoints", ...
     "num_components", ...
     "largest_component_fraction", ...
     "largest_component_volume_mm3", ...
@@ -86,8 +91,7 @@ function plotMetricsOverTime(featureTable, featureNames, subjects, visits, group
             [~,ord] = sort(temp.visit);
             temp = temp(ord,:);
     
-            cohort = temp.cohort(1);
-            groupType = extractBefore(cohort,2);  % "C" or "P"
+            groupType = string(temp.groupType(1));  % "C" or "P"
     
             switch groupMode
                 case "control"
@@ -121,12 +125,12 @@ function plotMetricsOverTime(featureTable, featureNames, subjects, visits, group
                 idxV = featureTable.visit == visits(v);
     
                 if groupMode ~= "patient"
-                    idxC = idxV & startsWith(featureTable.cohort,"C");
+                    idxC = idxV & featureTable.groupType == "C";
                     meanControl(v) = mean(featureTable{idxC, featureNames{m}}, 'omitnan');
                 end
     
                 if groupMode ~= "control"
-                    idxP = idxV & startsWith(featureTable.cohort,"P");
+                    idxP = idxV & featureTable.groupType == "P";
                     meanPatient(v) = mean(featureTable{idxP, featureNames{m}}, 'omitnan');
                 end
     
