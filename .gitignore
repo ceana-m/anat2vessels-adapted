@@ -12,7 +12,7 @@ workspaces/
 sandbox/
 cache/
 predictions_cloud/
-anat2vessels.pptx
+docs/
 
 # Models
 *.zip
@@ -31,3 +31,4 @@ __pycache__/
 # OS
 .DS_Store
 Thumbs.db
+.vscode
